@@ -1,10 +1,9 @@
 #include "shopconverter.h"
 #include "settings/settingsmanager.h"
-#include "functions.h"
 
 #include <QDebug>
 #include <QSettings>
-
+#include "settings/settingsmanager.h"
 #include <QJsonDocument>
 #include <QJsonArray>
 #include <QJsonObject>
@@ -18,12 +17,10 @@ ShopConverter::ShopConverter(QObject *parent) : QObject(parent)
 
 void ShopConverter::convert()
 {
-    SettingsManager *sManager = new SettingsManager;
-
     // ITEMS
     qDebug() << "Converting Items ...";
 
-    QString path = sManager->getSetting(Setting::shopPath);
+    QString path = SettingsManager::getPath("shopPath");
 
     if (QFile(path + "/CustomItems.items").exists())
     {
@@ -115,8 +112,9 @@ void ShopConverter::convert()
     // SHOPS
     qDebug() << "Converting Shops ...";
 
-    for (QString file : getFiles(path))
-    {
+    /*
+       for (QString file : getFiles(path))
+       {
         if (file.endsWith(".shop"))
         {
             qDebug() << "   Converting Shop:" << file;
@@ -151,7 +149,8 @@ void ShopConverter::convert()
                 settings.setValue("version", 2);
                 file_version = 2;
 
-                for (QString category : settings.value("categories").toStringList())
+                for (QString category :
+                   settings.value("categories").toStringList())
                 {
                     QList<QStringList> shops;
                     QList<QList<QStringList> > shops_items;
@@ -164,9 +163,11 @@ void ShopConverter::convert()
                         settings.setArrayIndex(i);
 
                         QStringList shop;
-                        shop.append(settings.value("name", "UNKNOWN SHOP").toString());
+                        shop.append(settings.value("name", "UNKNOWN
+                           SHOP").toString());
                         shop.append(settings.value("owner", "").toString());
-                        shop.append(settings.value("description", "").toString());
+                        shop.append(settings.value("description",
+                           "").toString());
                         shops.append(shop);
 
                         QList<QStringList> items;
@@ -179,10 +180,13 @@ void ShopConverter::convert()
                             settings.setArrayIndex(j);
 
                             QStringList item;
-                            item.append(settings.value("name", "UNKNOWN ITEM").toString());
+                            item.append(settings.value("name", "UNKNOWN
+                               ITEM").toString());
                             item.append(settings.value("price", "").toString());
-                            item.append(settings.value("category", "").toString());
-                            item.append(settings.value("description", "").toString());
+                            item.append(settings.value("category",
+                               "").toString());
+                            item.append(settings.value("description",
+                               "").toString());
                             items.append(item);
                         }
 
@@ -211,7 +215,8 @@ void ShopConverter::convert()
                     {
                         QList<QStringList> items = shops_items.at(i);
 
-                        settings.beginWriteArray(category + "_" + shops.at(i).at(0) + "_items");
+                        settings.beginWriteArray(category + "_" +
+                           shops.at(i).at(0) + "_items");
 
                         for (int j = 0; j < items.size(); j++)
                         {
@@ -239,7 +244,8 @@ void ShopConverter::convert()
                     {
                         settings.setArrayIndex(i);
 
-                        QStringList args = settings.value("shop").toStringList();
+                        QStringList args =
+                           settings.value("shop").toStringList();
                         QString     name, owner, description;
 
                         if (args.size() > 0) name = args[0];
@@ -259,12 +265,14 @@ void ShopConverter::convert()
                         if (s)
                         {
                             QList<Item *> items;
-                            count = settings.beginReadArray(c + "_" + s->name() + "_items");
+                            count = settings.beginReadArray(c + "_" + s->name()
+                               + "_items");
 
                             for (int i = 0; i < count; i++)
                             {
                                 settings.setArrayIndex(i);
-                                QStringList args = settings.value("item").toStringList();
+                                QStringList args =
+                                   settings.value("item").toStringList();
                                 QString     name, price, category, description;
 
                                 if (args.size() > 0) name = args[0];
@@ -275,7 +283,8 @@ void ShopConverter::convert()
 
                                 if (args.size() > 3) description = args[3];
 
-                                items.append(new Item(name, price, description, category));
+                                items.append(new Item(name, price, description,
+                                   category));
                             }
 
                             settings.endArray();
@@ -289,7 +298,8 @@ void ShopConverter::convert()
 
                 // Convert to JSON
                 QJsonObject project;
-                project.insert("name", settings.value("project_name").toString());
+                project.insert("name",
+                   settings.value("project_name").toString());
                 project.insert("version",     3);
 
                 QJsonArray categoryArray;
@@ -321,8 +331,10 @@ void ShopConverter::convert()
                                         QJsonObject item;
                                         item.insert("name",        i->name());
                                         item.insert("price",       i->price());
-                                        item.insert("description", i->description());
-                                        item.insert("category",    i->category());
+                                        item.insert("description",
+                                           i->description());
+                                        item.insert("category",
+                                              i->category());
 
                                         itemArray.append(item);
                                     }
@@ -351,13 +363,15 @@ void ShopConverter::convert()
                     f.write(doc.toJson(QJsonDocument::Indented));
                     f.close();
 
-                    qDebug() << "Successfully converted" << filePath << "to version 3.";
+                    qDebug() << "Successfully converted" << filePath << "to
+                       version 3.";
                 }
                 else
                 {
-                    qWarning() << "Error: Could not open file" << filePath << "!";
+                    qWarning() << "Error: Could not open file" << filePath <<
+                       "!";
                 }
             }
         }
-    }
+       }*/
 }

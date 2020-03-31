@@ -1,10 +1,12 @@
 #include "settingsmanager.h"
 #include "logging.h"
+#include "services/services.h"
 
 #include <QTextStream>
 #include <QCoreApplication>
 #include <QDir>
 #include <QDebug>
+#include <utility>
 
 #ifdef Q_OS_WIN
 # include <keychain.h>
@@ -12,467 +14,222 @@
 # include <qt5keychain/keychain.h>
 #endif // ifdef Q_OS_WIN
 
+bool SettingsManager::instanceFlag       = false;
+SettingsManager *SettingsManager::single = nullptr;
 
 SettingsManager::SettingsManager()
 {
-    settings = new QSettings(QDir::homePath() + "/.gm-companion/settings.ini", QSettings::IniFormat);
+    m_settings = new QSettings(QDir::homePath() + "/.gm-companion/settings.ini", QSettings::IniFormat);
 }
 
-// Returns a specific setting
-QString SettingsManager::getSetting(Setting setting, QString value)
+auto SettingsManager::getInstance()->SettingsManager *
 {
-    QString settingString;
-
-    switch (setting) {
-    case Setting::musicPath:
-        settings->beginGroup("Paths");
-        settingString = settings->value("musicPath", QDir::homePath() + "/.gm-companion/music").toString();
-        settings->endGroup();
-        break;
-
-    case Setting::soundPath:
-        settings->beginGroup("Paths");
-        settingString = settings->value("soundPath", QDir::homePath() + "/.gm-companion/sounds").toString();
-        settings->endGroup();
-        break;
-
-    case Setting::mapsPath:
-        settings->beginGroup("Paths");
-        settingString = settings->value("mapsPath", QDir::homePath() + "/.gm-companion/maps").toString();
-        settings->endGroup();
-        break;
-
-    case Setting::resourcesPath:
-        settings->beginGroup("Paths");
-        settingString = settings->value("resourcesPath", QDir::homePath() + "/.gm-companion/resources").toString();
-        settings->endGroup();
-        break;
-
-    case Setting::charactersPath:
-        settings->beginGroup("Paths");
-        settingString = settings->value("charactersPath", QDir::homePath() + "/.gm-companion/characters").toString();
-        settings->endGroup();
-        break;
-
-    case Setting::notesPath:
-        settings->beginGroup("Paths");
-        settingString = settings->value("notesPath", QDir::homePath() + "/.gm-companion/notes").toString();
-        settings->endGroup();
-        break;
-
-    case Setting::audioPath:
-        settings->beginGroup("Paths");
-        settingString = settings->value("audioPath", QDir::homePath() + "/.gm-companion/audio").toString();
-        settings->endGroup();
-        break;
-
-    case Setting::radioPath:
-        settings->beginGroup("Paths");
-        settingString = settings->value("radioPath", QDir::homePath() + "/.gm-companion/radio").toString();
-        settings->endGroup();
-        break;
-
-    case Setting::shopPath:
-        settings->beginGroup("Paths");
-        settingString = settings->value("shopPath", QDir::homePath() + "/.gm-companion/shop").toString();
-        settings->endGroup();
-        break;
-
-    case Setting::uiMode:
-        settingString = settings->value("uiMode", "Bright").toString();
-        break;
-
-    case Setting::language:
+    if (!instanceFlag)
     {
-        settingString = settings->value("language", "default").toString();
-
-        if (settingString == "default")
-        {
-            settingString = QLocale::languageToString(QLocale::system().language());
-
-            if (settingString == "German") settingString = "Deutsch";
-        }
-
-        break;
+        single       = new SettingsManager;
+        instanceFlag = true;
+        single->updateSettings();
     }
-
-    case Setting::version:
-        settingString = QString::number(settings->value("version", 0).toInt());
-        break;
-
-    case Setting::spotifyUsername:
-        settings->beginGroup("Spotify");
-        settingString = settings->value("spotifyUsername", "").toString();
-        settings->endGroup();
-        break;
-
-    case Setting::spotifyPassword:
-    {
-        QKeychain::ReadPasswordJob passwordJob("gm-companion.spotify");
-        passwordJob.setAutoDelete(false);
-        passwordJob.setKey(getSetting(Setting::spotifyUsername));
-        QEventLoop passwordLoop;
-        passwordLoop.connect(&passwordJob, SIGNAL(finished(QKeychain::Job*)),
-                             &passwordLoop, SLOT(quit()));
-        passwordJob.start();
-        passwordLoop.exec();
-
-        if (passwordJob.error()) {
-            settingString = "";
-            qCCritical(gmSettings) << "Could not read spotify password:" << passwordJob.error() << passwordJob.errorString();
-        } else {
-            settingString = passwordJob.textData();
-            qCDebug(gmSettings) << "Successfully read spotify password.";
-        }
-        break;
-    }
-
-    case Setting::spotifyID:
-        settings->beginGroup("Spotify");
-        settingString = settings->value("spotifyID", "").toString();
-        settings->endGroup();
-        break;
-
-    case Setting::spotifySecret:
-        settings->beginGroup("Spotify");
-        settingString = settings->value("spotifySecret", "").toString();
-        settings->endGroup();
-        break;
-
-    case Setting::showToolNames:
-        settingString = settings->value("showToolNames", "0").toString();
-        break;
-
-    case Setting::classicIcons:
-        settingString = settings->value("classicIcons", "0").toString();
-        break;
-
-    case Setting::googleID:
-        settings->beginGroup("Google");
-        settingString = settings->value("googleID", "").toString();
-        settings->endGroup();
-        break;
-
-    case Setting::googleSecret:
-        settings->beginGroup("Google");
-        settingString = settings->value("googleSecret", "").toString();
-        settings->endGroup();
-        break;
-
-    case Setting::googleConnect:
-        settings->beginGroup("Google");
-        settingString = QString::number(settings->value("googleConnect", "").toInt());
-        settings->endGroup();
-        break;
-
-    case Setting::googlePath:
-        settings->beginGroup("Google");
-        settingString = settings->value(value).toString();
-        settings->endGroup();
-        break;
-
-    case Setting::cloudMode:
-        settingString = QString::number(settings->value("cloudMode", 0).toInt());
-        break;
-
-    default:
-        settingString = "";
-        break;
-    }
-    return settingString;
+    return single;
 }
 
-// Sets a specific setting
-void SettingsManager::setSetting(Setting setting, int checked, QString value, QString value2)
+SettingsManager::~SettingsManager()
 {
-    switch (setting) {
-    case Setting::musicPath:
+    instanceFlag = false;
+    m_settings->deleteLater();
+}
 
-        if (value.length() > 1) {
-            settings->beginGroup("Paths");
-            settings->setValue("musicPath", value);
-            settings->endGroup();
-        }
-        break;
+auto SettingsManager::getSetting(const QString& setting, const QString& defaultValue, QString group)->QString
+{
+    if (group.isEmpty()) group = DEFAULT_GROUP;
 
-    case Setting::soundPath:
+    getInstance()->m_settings->beginGroup(group);
+    auto value = getInstance()->m_settings->value(setting, defaultValue).toString();
+    getInstance()->m_settings->endGroup();
+    return value;
+}
 
-        if (value.length() > 1) {
-            settings->beginGroup("Paths");
-            settings->setValue("soundPath", value);
-            settings->endGroup();
-        }
-        break;
+void SettingsManager::setSetting(const QString& setting, const QString& value, const QString& group)
+{
+    getInstance()->m_settings->beginGroup(group);
+    getInstance()->m_settings->setValue(setting, value);
+    getInstance()->m_settings->endGroup();
+}
 
-    case Setting::mapsPath:
+void SettingsManager::setSetting(QString setting, int value, QString group)
+{
+    setSetting(std::move(setting), QString::number(value), std::move(group));
+}
 
-        if (value.length() > 1) {
-            settings->beginGroup("Paths");
-            settings->setValue("mapsPath", value);
-            settings->endGroup();
-        }
-        break;
+auto SettingsManager::getPath(const QString& setting, QString group)->QString
+{
+    if (group.isEmpty()) group = SettingsManager::getInstance()->getActivePathGroup();
+    auto value = SettingsManager::getInstance()->getSetting(setting, "", group);
 
-    case Setting::resourcesPath:
+    if (value.isEmpty()) value = SettingsManager::getInstance()->getDefaultPath(setting, group);
+    return value;
+}
 
-        if (value.length() > 1) {
-            settings->beginGroup("Paths");
-            settings->setValue("resourcesPath", value);
-            settings->endGroup();
-        }
-        break;
+void SettingsManager::setPath(QString setting, QString value, QString group)
+{
+    if (group.isEmpty()) group = SettingsManager::getInstance()->getActivePathGroup();
+    setSetting(std::move(setting), std::move(value), PATHS_GROUP);
+}
 
-    case Setting::shopPath:
+auto SettingsManager::getLanguage()->QString
+{
+    auto value = SettingsManager::getSetting("language", "default");
 
-        if (value.length() > 1) {
-            settings->beginGroup("Paths");
-            settings->setValue("shopPath", value);
-            settings->endGroup();
-        }
-        break;
-
-    case Setting::charactersPath:
-
-        if (value.length() > 1) {
-            settings->beginGroup("Paths");
-            settings->setValue("charactersPath", value);
-            settings->endGroup();
-        }
-        break;
-
-    case Setting::notesPath:
-
-        if (value.length() > 1) {
-            settings->beginGroup("Paths");
-            settings->setValue("notesPath", value);
-            settings->endGroup();
-        }
-        break;
-
-    case Setting::audioPath:
-
-        if (value.length() > 1) {
-            settings->beginGroup("Paths");
-            settings->setValue("audioPath", value);
-            settings->endGroup();
-        }
-        break;
-
-    case Setting::radioPath:
-
-        if (value.length() > 1) {
-            settings->beginGroup("Paths");
-            settings->setValue("radioPath", value);
-            settings->endGroup();
-        }
-        break;
-
-    case Setting::uiMode:
+    if (value == "default")
     {
-        settings->setValue("uiMode", value);
-        break;
+        value = QLocale::languageToString(QLocale::system().language());
+
+        if (value == "German") return "Deutsch";
     }
 
-    case Setting::openWhatIsNewWindow:
+    return value;
+}
 
-        if (checked) settings->setValue("openWhatIsNewWindow", 1);
-        else settings->setValue("openWhatIsNewWindow", 0);
-        break;
+void SettingsManager::setLanguage(QString language)
+{
+    setSetting("language", std::move(language));
+}
 
-    case Setting::language:
-        settings->setValue("language", value);
-        break;
+auto SettingsManager::getServerUrl()->QString
+{
+    if (SettingsManager::getSetting("serviceConnection") == "default") {
+        return DEFAULT_SERVER_URL;
+    }
 
-    case Setting::version:
-        settings->setValue("version", value);
-        break;
+    return SettingsManager::getSetting("serverUrl", DEFAULT_SERVER_URL);
+}
 
-    case Setting::spotifyUsername:
+void SettingsManager::setServerUrl(QString url)
+{
+    setSetting("serverUrl", std::move(url));
+}
 
-        if (value.length() > 1) {
-            settings->beginGroup("Spotify");
-            settings->setValue("spotifyUsername", value);
-            settings->endGroup();
-        }
-        break;
+auto SettingsManager::getPassword(const QString& username, const QString& service)->QString
+{
+    QKeychain::ReadPasswordJob passwordJob("gm-companion." + service);
 
-    case Setting::spotifyPassword:
+    passwordJob.setAutoDelete(false);
+    passwordJob.setKey(username);
+    QEventLoop passwordLoop;
+    QEventLoop::connect(&passwordJob, SIGNAL(finished(QKeychain::Job*)),
+                        &passwordLoop, SLOT(quit()));
+    passwordJob.start();
+    passwordLoop.exec();
+
+    if (passwordJob.error()) {
+        qCCritical(gmSettings) << "Could not read password:" << passwordJob.error() << passwordJob.errorString();
+        return "";
+    }
+
+    qCDebug(gmSettings) << "Successfully read password.";
+    return passwordJob.textData();
+}
+
+void SettingsManager::setPassword(const QString& username, const QString& password, const QString& service)
+{
+    QKeychain::WritePasswordJob passwordJob("gm-companion." + service);
+
+    passwordJob.setAutoDelete(false);
+    passwordJob.setKey(username);
+    passwordJob.setTextData(password);
+    QEventLoop passwordLoop;
+    QEventLoop::connect(&passwordJob, SIGNAL(finished(QKeychain::Job*)),
+                        &passwordLoop, SLOT(quit()));
+    passwordJob.start();
+    passwordLoop.exec();
+
+    if (passwordJob.error()) {
+        qCCritical(gmSettings) << "Unable to save password:" << passwordJob.error() << passwordJob.errorString();
+    }
+    else
     {
-        QKeychain::WritePasswordJob passwordJob("gm-companion.spotify");
-        passwordJob.setAutoDelete(false);
-        passwordJob.setKey(getSetting(Setting::spotifyUsername));
-        passwordJob.setTextData(value);
-        QEventLoop passwordLoop;
-        passwordLoop.connect(&passwordJob, SIGNAL(finished(QKeychain::Job*)),
-                             &passwordLoop, SLOT(quit()));
-        passwordJob.start();
-        passwordLoop.exec();
-
-        if (passwordJob.error()) {
-            qCCritical(gmSettings) << "Unable to save spotify password:" << passwordJob.error() << passwordJob.errorString();
-        }
-        else
-        {
-            qCDebug(gmSettings) << "Successfully saved spotify password.";
-        }
-        break;
+        qCDebug(gmSettings) << "Successfully saved password.";
     }
+}
 
-    case Setting::spotifyID:
+auto SettingsManager::getDefaultPath(const QString& setting, const QString& group)->QString
+{
+    if (setting.isEmpty()) return "";
 
-        if (value.length() > 1) {
-            settings->beginGroup("Spotify");
-            settings->setValue("spotifyID", value);
-            settings->endGroup();
-        }
-        break;
+    if (group != PATHS_GROUP) return "/gm-companion/" + setting;
 
-    case Setting::spotifySecret:
+    return QDir::homePath() + "/.gm-companion/" + setting;
+}
 
-        if (value.length() > 1) {
-            settings->beginGroup("Spotify");
-            settings->setValue("spotifySecret", value);
-            settings->endGroup();
-        }
-        break;
+auto SettingsManager::getActivePathGroup()->QString
+{
+    auto cloudMode = getSetting("cloudMode", "local");
 
-    case Setting::showToolNames:
-        settings->setValue("showToolNames", checked);
-        break;
+    if (cloudMode == "GoogleDrive") return "Google";
 
-    case Setting::classicIcons:
-        settings->setValue("classicIcons", checked);
-        break;
+    if (cloudMode == "NextCloud") return "NextCloud";
 
-    case Setting::googleID:
-
-        if (value.length() > 1) {
-            settings->beginGroup("Google");
-            settings->setValue("googleID", value);
-            settings->endGroup();
-        }
-        break;
-
-    case Setting::googleSecret:
-
-        if (value.length() > 1) {
-            settings->beginGroup("Google");
-            settings->setValue("googleSecret", value);
-            settings->endGroup();
-        }
-        break;
-
-    case Setting::googleConnect:
-        settings->beginGroup("Google");
-        settings->setValue("googleConnect", checked);
-        settings->endGroup();
-        break;
-
-    case Setting::googlePath:
-        settings->beginGroup("Google");
-        settings->setValue(value, value2);
-        settings->endGroup();
-        break;
-
-    case Setting::cloudMode:
-        settings->setValue("cloudMode", value);
-        break;
-
-    default:
-        break;
-    }
+    return PATHS_GROUP;
 }
 
 // Set addon disabled or enabled
-void SettingsManager::setAddonEnabled(QString addon, bool enabled)
+void SettingsManager::setAddonEnabled(const QString& addon, bool enabled)
 {
-    settings->beginGroup("Addons");
-    settings->setValue(addon, enabled);
-    settings->endGroup();
+    m_settings->beginGroup("Addons");
+    m_settings->setValue(addon, enabled);
+    m_settings->endGroup();
 }
 
 // Returns if addon is enabled
-bool SettingsManager::getIsAddonEnabled(QString addon)
+auto SettingsManager::getIsAddonEnabled(const QString& addon)->bool
 {
-    settings->beginGroup("Addons");
-    bool enabled = true;
-
-    if (settings->value(addon, true).toBool() == false) enabled = false;
-    settings->endGroup();
+    m_settings->beginGroup("Addons");
+    bool enabled = m_settings->value(addon, true).toBool();
+    m_settings->endGroup();
 
     return enabled;
 }
 
 // Returns Official Addons
-QStringList SettingsManager::getOfficialAddons()
+auto SettingsManager::getOfficialAddons()->QStringList
 {
-    return officialAddons;
-}
-
-// Returns all inactive characters
-QStringList SettingsManager::getInactiveCharacters()
-{
-    qDebug() << "Getting inactive characters ...";
-
-    QStringList characters;
-
-    settings->beginGroup("Characters");
-
-    int size = settings->beginReadArray("InactiveCharacters");
-
-    for (int i = 0; i < size; i++)
-    {
-        settings->setArrayIndex(i);
-
-        characters.push_back(settings->value("filename").toString());
-    }
-
-    settings->endArray();
-    settings->endGroup();
-
-    return characters;
-}
-
-void SettingsManager::setInactiveCharacters(QStringList characters)
-{
-    qDebug() << "Writing inactive characters ...";
-
-    settings->beginGroup("Characters");
-
-    settings->beginWriteArray("InactiveCharacters");
-
-    for (int i = 0; i < characters.size(); i++)
-    {
-        settings->setArrayIndex(i);
-
-        settings->setValue("filename", characters.at(i));
-    }
-
-    settings->endArray();
-    settings->endGroup();
+    return m_officialAddons;
 }
 
 // Updates the settings if something changed from a previous version
 void SettingsManager::updateSettings()
 {
-    if (settings->value("version").toInt() < 320) // Last major settings change
-    {                                             // was in Beta 3.2
-        qDebug() << "Updating settings file...";
-
-        QStringList paths = {
-            "musicPath", "charactersPath", "resourcesPath", "soundPath", "mapsPath", "notesPath", "shopPath"
-        };
-
-        for (QString path : paths) {
-            if (settings->value(path).isValid()) {
-                QString temp;
-                temp = settings->value(path).toString();
-                settings->remove(path);
-
-                settings->beginGroup("Paths");
-                settings->setValue(path, temp);
-                settings->endGroup();
-            }
-        }
+    if (getSetting("cloudMode") == "0")
+    {
+        setSetting("cloudMode", "local");
     }
+    else if (getSetting("cloudMode") == "1")
+    {
+        setSetting("cloudMode", "GoogleDrive");
+    }
+
+    renameSetting("audioPath",      "audio",      PATHS_GROUP);
+    renameSetting("charactersPath", "characters", PATHS_GROUP);
+    renameSetting("mapsPath",       "maps",       PATHS_GROUP);
+    renameSetting("musicPath",      "music",      PATHS_GROUP);
+    renameSetting("notesPath",      "notes",      PATHS_GROUP);
+    renameSetting("radioPath",      "radio",      PATHS_GROUP);
+    renameSetting("resourcesPath",  "resources",  PATHS_GROUP);
+    renameSetting("shopPath",       "shops",      PATHS_GROUP);
+    renameSetting("soundPath",      "sounds",     PATHS_GROUP);
+}
+
+void SettingsManager::renameSetting(const QString& currentName, QString newName, const QString& group)
+{
+    auto value = getSetting(currentName, "", group);
+
+    if (!value.isEmpty()) setSetting(std::move(newName), value, group);
+    removeSetting(currentName, group);
+}
+
+void SettingsManager::removeSetting(const QString& setting, const QString& group)
+{
+    m_settings->beginGroup(group);
+    m_settings->remove(setting);
+    m_settings->endGroup();
 }

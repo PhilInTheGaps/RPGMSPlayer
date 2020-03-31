@@ -2,7 +2,6 @@
 #define ADDONELEMENTMANAGER_H
 
 #include <QObject>
-#include "settings/settingsmanager.h"
 #include "audioelement.h"
 
 class AddonElementManager : public QObject
@@ -24,8 +23,6 @@ public:
     Q_INVOKABLE void addElements(bool subscenario = false, int scenarioIndex = 0);
 
 private:
-    SettingsManager sManager;
-
     void findAddons();
     QStringList m_addonPaths;
     QStringList m_spotifyFiles;
@@ -35,13 +32,13 @@ private:
     QString m_currentSpotifyFolder;
 
     void findSpotifyPlaylists();
-    QList<MusicElement*> m_spotifyElements;
+    QList<AudioElement*> m_spotifyElements;
     QStringList m_spotifyNames;
 
 signals:
     void spotifyFoldersChanged();
     void elementsChanged();
-    void exportElements(QList<MusicElement*>, bool subscenario, int scenarioIndex);
+    void exportElements(QList<AudioElement*>, bool subscenario, int scenarioIndex);
 };
 
 #endif // ADDONELEMENTMANAGER_H

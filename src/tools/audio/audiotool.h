@@ -11,9 +11,6 @@
 #include "players/radioplayer.h"
 #include "metadatareader.h"
 
-#include "settings/settingsmanager.h"
-#include "managers/filemanager.h"
-
 #include "mpris/mprisadaptor.h"
 #include "mpris/mprisplayeradaptor.h"
 
@@ -35,13 +32,13 @@ class AudioTool : public QObject
     Q_PROPERTY(int index READ index NOTIFY currentIndexChanged)
 
 public:
-    explicit AudioTool(FileManager *fManager, QQmlApplicationEngine *engine, QObject *parent = nullptr);
+    explicit AudioTool(QQmlApplicationEngine *engine, QObject *parent = nullptr);
     ~AudioTool();
 
     AudioEditor* getEditor() const { return editor; }
 
     // Project
-    void updateProjectList() { if (fileManager) fileManager->getAudioSaveLoad()->findProjects(fileManager->getModeInt()); }
+    void updateProjectList() { audioSaveLoad.findProjects(false); }
     QStringList projectNames();
     QString currentProjectName() const { if (m_currentProject) return m_currentProject->name(); else return nullptr; }
     Q_INVOKABLE void setCurrentProject(int index);
@@ -61,8 +58,8 @@ public:
     Q_INVOKABLE void playElement(QString name, int type, QString subscenario);
 
     Q_INVOKABLE void next();
-    Q_INVOKABLE void setMusicVolume(float volume);
-    Q_INVOKABLE void setSoundVolume(float volume);
+    Q_INVOKABLE void setMusicVolume(qreal volume);
+    Q_INVOKABLE void setSoundVolume(qreal volume);
     Q_INVOKABLE void playPause();
     Q_INVOKABLE void again();
     Q_INVOKABLE void setMusicIndex(int index);
@@ -91,11 +88,10 @@ signals:
     void songsChanged();
     void metaDataChanged();
     void currentIndexChanged();
-    void authorizeSpotify(QUrl url);
     void spotifyAuthorized();
 
 private slots:
-    void onProjectsChanged(QList<AudioProject*> projects);
+    void onProjectsChanged(QList<AudioProject*> projects, bool forEditor);
     void onCurrentScenarioChanged();
 
     void onStartedPlaying()
@@ -112,17 +108,15 @@ private slots:
 
     void onMetaDataUpdated(MetaData metaData);
 
-    void onSoundsChanged(QList<SoundElement*> elements);
+    void onSoundsChanged(QList<AudioElement*> elements);
 
-    void onSpotifyAuthorize(QUrl url) { emit authorizeSpotify(url); }
     void onSpotifyAuthorized() { emit spotifyAuthorized(); }
 
 private:
-    SettingsManager *sManager = nullptr;
     AudioEditor *editor = nullptr;
-    FileManager *fileManager = nullptr;
     QQmlApplicationEngine *qmlEngine = nullptr;
     MetaDataReader *metaDataReader = nullptr;
+    AudioSaveLoad audioSaveLoad;
 
     // MPRIS
     MprisAdaptor *mprisAdaptor = nullptr;
@@ -131,10 +125,10 @@ private:
 
     // Players
     MusicPlayer *musicPlayer = nullptr;
-    SoundPlayer *soundPlayer = nullptr;
+    SoundPlayerController *soundPlayer = nullptr;
     RadioPlayer *radioPlayer = nullptr;
     SpotifyPlayer *spotifyPlayer = nullptr;
-    QList<AudioPlayer*> musicPlayers;
+    QList<AudioPlayer*> audioPlayers;
 
     AudioElementModelModel *elementModel = nullptr;
     AudioElementModel *soundModel = nullptr;

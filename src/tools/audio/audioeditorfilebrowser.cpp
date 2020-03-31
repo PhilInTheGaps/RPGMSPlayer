@@ -1,6 +1,5 @@
 #include "audioeditorfilebrowser.h"
-#include "functions.h"
-
+#include "settings/settingsmanager.h"
 #include <QDebug>
 #include <QQmlContext>
 
@@ -30,15 +29,15 @@ void AudioEditorFileBrowser::setType(int type)
     switch (type)
     {
     case 0: // Music
-        m_basePath = sManager.getSetting(Setting::musicPath);
+        m_basePath = SettingsManager::getPath("musicPath");
         break;
 
     case 1: // Sounds
-        m_basePath = sManager.getSetting(Setting::soundPath);
+        m_basePath = SettingsManager::getPath("soundPath");
         break;
 
     case 2: // Radio
-        m_basePath = sManager.getSetting(Setting::radioPath);
+        m_basePath = SettingsManager::getPath("radioPath");
         break;
 
     default:
@@ -65,8 +64,9 @@ int AudioEditorFileBrowser::addFolders(QStringList path, int index)
 {
     int count = 0;
 
-    for (QString f : getFolders(m_basePath + "/" + path.join("/")))
-    {
+    /*
+       for (QString f : getFolders(m_basePath + "/" + path.join("/")))
+       {
         if ((f != ".") && (f != ".."))
         {
             auto file = new AudioEditorFile(f, path, 3);
@@ -82,7 +82,7 @@ int AudioEditorFileBrowser::addFolders(QStringList path, int index)
 
             count++;
         }
-    }
+       }*/
 
     return count;
 }
@@ -91,8 +91,9 @@ int AudioEditorFileBrowser::addFiles(QStringList path, int index)
 {
     int count = 0;
 
-    for (QString f : getFiles(m_basePath + "/" + path.join("/")))
-    {
+    /*
+       for (QString f : getFiles(m_basePath + "/" + path.join("/")))
+       {
         if (!f.endsWith("."))
         {
             auto file = new AudioEditorFile(f, path, m_type);
@@ -108,7 +109,7 @@ int AudioEditorFileBrowser::addFiles(QStringList path, int index)
 
             count++;
         }
-    }
+       }*/
     return count;
 }
 

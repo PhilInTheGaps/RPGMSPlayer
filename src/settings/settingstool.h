@@ -16,11 +16,12 @@ class SettingsTool : public QObject
 
 public:
     explicit SettingsTool(QObject *parent = nullptr);
+    ~SettingsTool();
 
     int currentLanguageIndex();
     Q_INVOKABLE QString getPath(QString type);
-    Q_INVOKABLE void setPath(QString type, QString path);
-    Q_INVOKABLE void setLanguage(QString lang);
+    Q_INVOKABLE void setPath(QString type, QString path, QString group = PATHS_GROUP);
+    Q_INVOKABLE void setLanguage(QString language);
 
     int uiStyleIndex();
     Q_INVOKABLE void setUiStyle(QString style);
@@ -30,30 +31,35 @@ public:
     Q_INVOKABLE void setCheckForUpdates(bool check);
     Q_INVOKABLE bool getCheckForUpdates();
 
-    Q_INVOKABLE void setSpotifyID(QString id) { sManager->setSetting(Setting::spotifyID, 1, id); }
-    Q_INVOKABLE QString getSpotifyID() const { return sManager->getSetting(Setting::spotifyID); }
-    Q_INVOKABLE void setSpotifySecret(QString secret) { sManager->setSetting(Setting::spotifySecret, 1, secret); }
-    Q_INVOKABLE QString getSpotifySecret() const { return sManager->getSetting(Setting::spotifySecret); }
-    Q_INVOKABLE void setSpotifyUsername(QString username) { sManager->setSetting(Setting::spotifyUsername, 1, username); }
-    Q_INVOKABLE QString getSpotifyUsername() { return sManager->getSetting(Setting::spotifyUsername); }
-    Q_INVOKABLE void setSpotifyPassword(QString password) { sManager->setSetting(Setting::spotifyPassword, 1, password); }
-    Q_INVOKABLE QString getSpotifyPassword() { return sManager->getSetting(Setting::spotifyPassword); }
+    Q_INVOKABLE void setServiceConnection(QString type) { SettingsManager::setSetting("serviceConnection", type); }
+    Q_INVOKABLE QString getServiceConnection() const { return SettingsManager::getSetting("serviceConnection"); }
+    Q_INVOKABLE void setServer(QString url) { SettingsManager::setServerUrl(url); }
+    Q_INVOKABLE QString getServer() const { return SettingsManager::getServerUrl(); }
 
-    Q_INVOKABLE QString getGoogleID() const { return sManager->getSetting(Setting::googleID); }
-    Q_INVOKABLE QString getGoogleSecret() const { return sManager->getSetting(Setting::googleSecret); }
-    Q_INVOKABLE void setGoogleConnect(bool connect) { sManager->setSetting(Setting::googleConnect, connect); }
-    Q_INVOKABLE bool getGoogleConnect() { return sManager->getSetting(Setting::googleConnect).toInt(); }
-    Q_INVOKABLE void setGooglePath(QString name, QString value) { sManager->setSetting(Setting::googlePath, 1, name, value); }
-    Q_INVOKABLE QString getGooglePath(QString name) { return sManager->getSetting(Setting::googlePath, name); }
+    Q_INVOKABLE void setSpotifyID(QString id) { SettingsManager::setSetting("spotifyID", id, "Spotify"); }
+    Q_INVOKABLE QString getSpotifyID() const { return SettingsManager::getSetting("spotifyID", "", "Spotify"); }
+    Q_INVOKABLE void setSpotifySecret(QString secret) { SettingsManager::setSetting("spotifySecret", secret, "Spotify"); }
+    Q_INVOKABLE QString getSpotifySecret() const { return SettingsManager::getSetting("spotifySecret", "", "Spotify"); }
+    Q_INVOKABLE void setSpotifyUsername(QString username) { SettingsManager::setSetting("spotifyUsername", username, "Spotify"); }
+    Q_INVOKABLE QString getSpotifyUsername() { return SettingsManager::getSetting("spotifyUsername", "", "Spotify"); }
+    Q_INVOKABLE void setSpotifyPassword(QString password) { SettingsManager::setPassword(SettingsManager::getSetting("spotifyUsername", "", "Spotify"), password, "Spotify"); }
+    Q_INVOKABLE QString getSpotifyPassword() { return SettingsManager::getPassword(SettingsManager::getSetting("spotifyUsername", "", "Spotify"), "Spotify"); }
 
-    Q_INVOKABLE void setCloudMode(int mode) { sManager->setSetting(Setting::cloudMode, 1, QString::number(mode)); }
-    Q_INVOKABLE int getCloudMode() { return sManager->getSetting(Setting::cloudMode).toInt(); }
+    Q_INVOKABLE QString getGoogleID() const { return SettingsManager::getSetting("googleID", "", "Google"); }
+    Q_INVOKABLE QString getGoogleSecret() const { return SettingsManager::getSetting("googleSecret", "", "Google"); }
+    Q_INVOKABLE void setGoogleConnect(bool connect) { SettingsManager::setSetting("googleConnect", connect, "Google"); }
+    Q_INVOKABLE bool getGoogleConnect() { return SettingsManager::getSetting("googleConnect", "", "Google").toInt(); }
+    Q_INVOKABLE void setGooglePath(QString name, QString value) { SettingsManager::setSetting(name, value, "Google"); }
+    Q_INVOKABLE QString getGooglePath(QString name) { return SettingsManager::getSetting(name, "", "Google"); }
 
-    bool classicIcons() const { return sManager->getSetting(Setting::classicIcons).toInt(); }
-    void setClassicIcons(bool b) { sManager->setSetting(Setting::classicIcons, b); emit classicIconsChanged(); }
+    Q_INVOKABLE void setCloudMode(int mode) { SettingsManager::setSetting("cloudMode", mode); }
+    Q_INVOKABLE int getCloudMode() { return SettingsManager::getSetting("cloudMode").toInt(); }
 
-    bool showToolNames() const { return sManager->getSetting(Setting::showToolNames).toInt(); }
-    void setShowToolNames(bool b) { sManager->setSetting(Setting::showToolNames, b); emit showToolNamesChanged(); }
+    bool classicIcons() const { return SettingsManager::getSetting("classicIcons").toInt(); }
+    void setClassicIcons(bool b) { SettingsManager::setSetting("classicIcons", b); emit classicIconsChanged(); }
+
+    bool showToolNames() const { return SettingsManager::getSetting("showToolNames").toInt(); }
+    void setShowToolNames(bool b) { SettingsManager::setSetting("showToolNames", b); emit showToolNamesChanged(); }
 
     Q_INVOKABLE QString getCreditsPage();
 
@@ -75,7 +81,6 @@ signals:
     void classicIconsChanged();
 
 private:
-    SettingsManager *sManager;
     QStringList languages = {"English", "Deutsch"};
     QStringList styles = {"Dark", "Bright"};
 

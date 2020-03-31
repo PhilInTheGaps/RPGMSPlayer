@@ -1,8 +1,7 @@
 #include "effecttool.h"
 #include <QDebug>
 #include <QDir>
-
-#include "functions.h"
+#include "settings/settingsmanager.h"
 
 EffectTool::EffectTool(QObject *parent) : QObject(parent)
 {
@@ -19,21 +18,25 @@ void EffectTool::loadAddons()
     m_effectTypes.clear();
     m_effectList.clear();
 
-    // Get addons from all paths
-    for (QString folder : addonFolders)
-    {
+    /*
+       // Get addons from all paths
+       for (QString folder : addonFolders)
+       {
         for (QString addon : getFolders(folder))
         {
-            if (!addon.contains(".") && !m_addons.contains(addon) && sManager.getIsAddonEnabled(addon) && QFile(folder + "/" + addon + "/combat_effects.ini").exists())
+            if (!addon.contains(".") && !m_addons.contains(addon) &&
+               SettingsManager::getInstance()->getIsAddonEnabled(addon) &&
+               QFile(folder + "/" + addon + "/combat_effects.ini").exists())
             {
                 m_addons.append(addon);
                 m_addonPaths.append(folder + "/" + addon);
 
-                QSettings s(folder + "/" + addon + "/addon.ini", QSettings::IniFormat);
+                QSettings s(folder + "/" + addon + "/addon.ini",
+                   QSettings::IniFormat);
                 m_addonNames.append(s.value("name", "").toString());
             }
         }
-    }
+       }*/
 
     emit addonsChanged();
 
@@ -53,7 +56,7 @@ void EffectTool::loadEffects()
     QString addon     = m_addons[index];
     QString addonPath = m_addonPaths[index];
 
-    if (sManager.getIsAddonEnabled(addon))
+    if (SettingsManager::getInstance()->getIsAddonEnabled(addon))
     {
         QSettings s(addonPath + "/combat_effects.ini", QSettings::IniFormat);
         s.setIniCodec("UTF-8");

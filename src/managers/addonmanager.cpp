@@ -1,5 +1,5 @@
 #include "addonmanager.h"
-#include "functions.h"
+#include "settings/settingsmanager.h"
 
 #include <QDebug>
 #include <QDir>
@@ -23,31 +23,38 @@ void AddonManager::updateAddonList()
 
     for (QString path : QStringList({ QDir::homePath() + "/.gm-companion/addons", ":/addons" }))
     {
-        for (QString addon : getFolders(path))
-        {
+        /*
+           for (QString addon : getFolders(path))
+           {
             if ((addon != ".") && (addon != ".."))
             {
-                QSettings settings(path + "/" + addon + "/addon.ini", QSettings::IniFormat);
+                QSettings settings(path + "/" + addon + "/addon.ini",
+                   QSettings::IniFormat);
                 settings.setIniCodec("UTF-8");
 
                 if (settings.value("addons_version", 0).toInt() == 3)
                 {
-                    m_addonNames.append(settings.value("name", tr("UNKNOWN ADDON")).toString());
-                    m_addonDescriptions.append(settings.value("description", "").toString());
+                    m_addonNames.append(settings.value("name", tr("UNKNOWN
+                       ADDON")).toString());
+                    m_addonDescriptions.append(settings.value("description",
+                       "").toString());
                     m_addonPathNames.append(addon);
-                    m_addonEnabledList.append(sManager.getIsAddonEnabled(addon));
+                    m_addonEnabledList.append(SettingsManager::getInstance()->getIsAddonEnabled(addon));
                 }
                 else
                 {
-                    m_addonNames.append(settings.value("name", tr("UNKNOWN ADDON")).toString() + " - " + tr("OUTDATED"));
-                    m_addonDescriptions.append(settings.value("description", "").toString());
+                    m_addonNames.append(settings.value("name", tr("UNKNOWN
+                       ADDON")).toString() + " - " + tr("OUTDATED"));
+                    m_addonDescriptions.append(settings.value("description",
+                       "").toString());
                     m_addonPathNames.append(addon);
                     m_addonEnabledList.append(false);
 
-                    sManager.setAddonEnabled(addon, false);
+                    SettingsManager::getInstance()->setAddonEnabled(addon,
+                       false);
                 }
             }
-        }
+           }*/
     }
 
     emit addonListChanged();

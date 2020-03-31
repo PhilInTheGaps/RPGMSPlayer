@@ -1,5 +1,5 @@
 #include "convertertool.h"
-#include "functions.h"
+#include "settings/settingsmanager.h"
 #include <QSettings>
 #include <QDir>
 #include <QDebug>
@@ -16,19 +16,20 @@ ConverterTool::ConverterTool(QObject *parent) : QObject(parent)
 // paths
 void ConverterTool::addAddonUnits()
 {
-    for (QString path : QStringList({ QDir::homePath() + "/.gm-companion/addons", ":/addons" }))
-    {
-        for (QString addon : getFolders(path))
-        {
-            if (sManager.getIsAddonEnabled(addon))
-            {
-                if (QFile(path + "/" + addon + "/units.ini").exists())
-                {
-                    m_unitPaths.append(path + "/" + addon + "/units.ini");
-                }
-            }
-        }
-    }
+    //    for (QString path : QStringList({ QDir::homePath() +
+    // "/.gm-companion/addons", ":/addons" }))
+    //    {
+    //        for (QString addon : getFolders(path))
+    //        {
+    //            if (SettingsManager::getInstance()->getIsAddonEnabled(addon))
+    //            {
+    //                if (QFile(path + "/" + addon + "/units.ini").exists())
+    //                {
+    //                    m_unitPaths.append(path + "/" + addon + "/units.ini");
+    //                }
+    //            }
+    //        }
+    //    }
 }
 
 // Read all the units from the .ini files
